@@ -84,6 +84,12 @@ export default function Home() {
     setCurrentRecord(null);
   };
 
+  const handleRecordDeleted = (deletedId: string) => {
+    setHistory((prevHistory) =>
+      prevHistory.filter((record) => record.id !== deletedId)
+    );
+  };
+
   const LoadingState = () => (
     <div className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse w-full">
@@ -149,7 +155,11 @@ export default function Home() {
             )}
           </div>
           <div className="lg:col-span-1 h-full lg:sticky top-24">
-            <DiagnosticHistory history={history} isLoading={isLoading} />
+            <DiagnosticHistory
+              history={history}
+              isLoading={isLoading}
+              onRecordDeleted={handleRecordDeleted}
+            />
           </div>
         </div>
       </main>

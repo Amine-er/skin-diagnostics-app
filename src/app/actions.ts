@@ -7,6 +7,8 @@ import {
   query,
   orderBy,
   Timestamp,
+  doc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { analyzeSkinFromPhoto } from '@/ai/flows/skin-analyzer';
@@ -88,5 +90,18 @@ export async function getHistory(): Promise<DiagnosticRecord[]> {
   } catch (error) {
     console.error('Error fetching history:', error);
     return [];
+  }
+}
+
+export async function deleteDiagnosticRecord(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'diagnostic_records', id));
+    console.log('Document with ID deleted:', id);
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to delete record: ${error.message}`);
+    }
+    throw new Error('An unknown error occurred while deleting the record.');
   }
 }
