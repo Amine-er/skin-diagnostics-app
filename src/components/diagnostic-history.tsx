@@ -10,12 +10,17 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { DiagnosticRecord } from '@/types';
 import { Calendar } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DiagnosticHistoryProps {
   history: DiagnosticRecord[];
+  isLoading: boolean;
 }
 
-export function DiagnosticHistory({ history }: DiagnosticHistoryProps) {
+export function DiagnosticHistory({
+  history,
+  isLoading,
+}: DiagnosticHistoryProps) {
   return (
     <Card className="h-full flex flex-col max-h-[calc(100vh-8rem)]">
       <CardHeader>
@@ -25,7 +30,23 @@ export function DiagnosticHistory({ history }: DiagnosticHistoryProps) {
       <CardContent className="flex-grow p-0 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="space-y-4 p-6 pt-0">
-            {history.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-4 p-4 border rounded-lg"
+                  >
+                    <Skeleton className="w-16 h-16 rounded-md shrink-0" />
+                    <div className="flex-grow space-y-2">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : history.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 text-center">
                 <p className="text-sm text-muted-foreground">No history yet.</p>
                 <p className="text-sm text-muted-foreground">
@@ -41,7 +62,10 @@ export function DiagnosticHistory({ history }: DiagnosticHistoryProps) {
                   <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
                     <Image
                       src={record.imageUrl}
-                      alt={`Diagnostic from ${format(record.date, 'PPP')}`}
+                      alt={`Diagnostic from ${format(
+                        new Date(record.date),
+                        'PPP'
+                      )}`}
                       fill
                       className="object-cover"
                     />
@@ -49,7 +73,7 @@ export function DiagnosticHistory({ history }: DiagnosticHistoryProps) {
                   <div className="flex-grow">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                       <Calendar className="w-3 h-3" />
-                      <span>{format(record.date, 'PPP p')}</span>
+                      <span>{format(new Date(record.date), 'PPP p')}</span>
                     </div>
                     <p className="text-sm line-clamp-3">{record.summary}</p>
                   </div>

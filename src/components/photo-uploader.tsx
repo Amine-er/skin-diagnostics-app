@@ -11,6 +11,9 @@ interface PhotoUploaderProps {
   loading: boolean;
 }
 
+const MAX_FILE_SIZE_KB = 750; // safe limit before base64 encoding
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024;
+
 export function PhotoUploader({ onImageUpload, loading }: PhotoUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
@@ -26,6 +29,16 @@ export function PhotoUploader({ onImageUpload, loading }: PhotoUploaderProps) {
       });
       return;
     }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        variant: 'destructive',
+        title: 'File Too Large',
+        description: `Please upload an image smaller than ${MAX_FILE_SIZE_KB}KB to meet Firestore's size limit.`,
+      });
+      return;
+    }
+
     onImageUpload(file);
   };
 
@@ -77,7 +90,9 @@ export function PhotoUploader({ onImageUpload, loading }: PhotoUploaderProps) {
             <span className="font-semibold text-primary">Click to upload</span>{' '}
             or drag and drop
           </p>
-          <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+          <p className="text-xs text-muted-foreground">
+            PNG, JPG, or WEBP (Max 750KB)
+          </p>
         </div>
         <input
           id="dropzone-file"

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { runDiagnostics } from '@/app/actions';
+import { runDiagnostics, getHistory } from '@/app/actions';
 import { PhotoUploader } from '@/components/photo-uploader';
 import { DiagnosticResults } from '@/components/diagnostic-results';
 import { DiagnosticHistory } from '@/components/diagnostic-history';
@@ -17,11 +17,32 @@ type NewRecord = Omit<DiagnosticRecord, 'id' | 'date'>;
 export default function Home() {
   const [history, setHistory] = useState<DiagnosticRecord[]>([]);
   const [currentRecord, setCurrentRecord] = useState<NewRecord | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setIsLoading(true);
+      try {
+        const historyData = await getHistory();
+        setHistory(historyData);
+      } catch (error) {
+        console.error('Failed to fetch history:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Failed to load history',
+          description: 'Could not retrieve past diagnostic records.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [toast]);
+
   const handleImageUpload = async (file: File) => {
-    setIsLoading(true);
+    setIsAnalyzing(true);
     setCurrentRecord(null);
 
     const reader = new FileReader();
@@ -32,12 +53,9 @@ export default function Home() {
         const result = await runDiagnostics(imageDataUrl);
         setCurrentRecord(result);
 
-        const newHistoryRecord: DiagnosticRecord = {
-          ...result,
-          id: new Date().toISOString(),
-          date: new Date(),
-        };
-        setHistory((prev) => [newHistoryRecord, ...prev]);
+        // Refetch history to include the new record
+        const historyData = await getHistory();
+        setHistory(historyData);
       } catch (error) {
         console.error(error);
         toast({
@@ -49,7 +67,7 @@ export default function Home() {
               : 'An unknown error occurred.',
         });
       } finally {
-        setIsLoading(false);
+        setIsAnalyzing(false);
       }
     };
     reader.onerror = () => {
@@ -58,7 +76,7 @@ export default function Home() {
         title: 'File Read Error',
         description: 'Could not read the uploaded image file.',
       });
-      setIsLoading(false);
+      setIsAnalyzing(false);
     };
   };
 
@@ -94,10 +112,10 @@ export default function Home() {
                 SkinDeep Insights
               </h1>
             </div>
-            {(currentRecord || isLoading) && (
+            {(currentRecord || isAnalyzing) && (
               <Button
                 onClick={startNewAnalysis}
-                disabled={isLoading}
+                disabled={isAnalyzing}
                 variant="outline"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
@@ -111,7 +129,7 @@ export default function Home() {
       <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full items-start">
           <div className="lg:col-span-2 bg-card p-8 rounded-xl shadow-sm min-h-[600px] flex items-center justify-center">
-            {isLoading ? (
+            {isAnalyzing ? (
               <LoadingState />
             ) : currentRecord ? (
               <DiagnosticResults record={currentRecord} />
@@ -125,13 +143,13 @@ export default function Home() {
                 </p>
                 <PhotoUploader
                   onImageUpload={handleImageUpload}
-                  loading={isLoading}
+                  loading={isAnalyzing}
                 />
               </div>
             )}
           </div>
           <div className="lg:col-span-1 h-full lg:sticky top-24">
-            <DiagnosticHistory history={history} />
+            <DiagnosticHistory history={history} isLoading={isLoading} />
           </div>
         </div>
       </main>
